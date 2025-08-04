@@ -17,6 +17,8 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/atomics/use-toast";
+import { useRegisterMutation } from "@/services/auth-service";
+import { Loader2Icon } from "lucide-react";
 
 const schema = yup.object().shape({
   name: yup.string().min(5).required(),
@@ -40,15 +42,31 @@ function SignUp() {
     },
   });
 
-  function onSubmit(values: FormData) {
-    console.log("🚀 ~ onSubmit ~ values:", values)
-    form.reset();
-    toast({
-      title: "Welcome",
-      description: "Sign in successfully",
-      open: true,
-    });
-    router.push("/");
+  const [register, { isLoading }] = useRegisterMutation();
+
+  async function onSubmit(values: FormData) {
+    try {
+      console.log("🚀 ~ onSubmit ~ values:", values);
+      const response = await register({
+        ...values,
+        password_confirmation: values.password,
+      }).unwrap();
+
+      console.log("🚀 ~ onSubmit ~ response:", response);
+      form.reset();
+      toast({
+        title: "Welcome",
+        description: "Sign in successfully",
+        open: true,
+      });
+      router.push("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Faileled to register",
+        open: true,
+      });
+    }
   }
 
   return (
@@ -165,7 +183,10 @@ function SignUp() {
               </label>
             </div>
 
-            <Button type="submit">Sign Up</Button>
+            <Button disabled={isLoading} type="submit">
+              {isLoading ? <Loader2Icon className="animate-spin" /> : null} Sign
+              Up
+            </Button>
             <Link href="/sign-in">
               <Button variant="third" className="mt-3">
                 Sign In to My Account

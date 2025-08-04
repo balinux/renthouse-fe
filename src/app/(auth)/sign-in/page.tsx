@@ -17,6 +17,8 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/atomics/use-toast";
+import { useLoginMutation } from "@/services/auth-service";
+import { Loader2Icon } from "lucide-react";
 
 const schema = yup.object().shape({
   email: yup.string().email().required(),
@@ -36,15 +38,28 @@ function SignIn() {
     },
   });
 
-  function onSubmit(values: FormData) {
-    console.log("🚀 ~ onSubmit ~ values:", values);
-    form.reset();
-    toast({
-      title: "Welcome",
-      description: "Sign in successfully",
-      open: true,
-    });
-    router.push("/");
+  const [login, { isLoading }] = useLoginMutation();
+
+  async function onSubmit(values: FormData) {
+    try {
+      const response = await login(values).unwrap();
+      console.log("🚀 ~ onSubmit ~ values:", response);
+
+      form.reset();
+      toast({
+        title: "Welcome",
+        description: "Sign in successfully",
+        open: true,
+      });
+      // router.push("/");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Sign in failed",
+        variant: "destructive",
+        open: true,
+      });
+    }
   }
 
   return (
@@ -118,7 +133,10 @@ function SignIn() {
                 Remember me
               </label>
             </div>
-            <Button type="submit">Sign In</Button>
+            <Button disabled={isLoading} type="submit">
+              {isLoading ? <Loader2Icon className="animate-spin" /> : null} Sign
+              In
+            </Button>
             <Link href="/sign-up">
               <Button variant="third" type="button" className="mt-3">
                 Create New Account
