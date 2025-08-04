@@ -15,10 +15,11 @@ import {
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/atomics/use-toast";
 import { useLoginMutation } from "@/services/auth-service";
 import { Loader2Icon } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 const schema = yup.object().shape({
   email: yup.string().email().required(),
@@ -29,6 +30,7 @@ type FormData = yup.InferType<typeof schema>;
 
 function SignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const form = useForm<FormData>({
     resolver: yupResolver(schema),
@@ -44,14 +46,25 @@ function SignIn() {
     try {
       const response = await login(values).unwrap();
       console.log("🚀 ~ onSubmit ~ values:", response);
+      if (response.success) {
+        const user = response.data;
 
-      form.reset();
-      toast({
-        title: "Welcome",
-        description: "Sign in successfully",
-        open: true,
-      });
-      // router.push("/");
+        const loginRes = await signIn("credentials", {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          token: user.token,
+          callbackUrl: searchParams.get("callbackUrl") || "/",
+          redirect: false,
+        });
+        toast({
+          title: "Welcome",
+          description: "Sign in successfully",
+          open: true,
+        });
+        router.push(loginRes?.url || "/");
+      }
+      // form.reset();
     } catch (error) {
       toast({
         title: "Error",
