@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/components/atomics/use-toast";
 import { useRegisterMutation } from "@/services/auth-service";
 import { Loader2Icon } from "lucide-react";
+import { signIn } from "next-auth/react";
 
 const schema = yup.object().shape({
   name: yup.string().min(5).required(),
@@ -52,11 +53,27 @@ function SignUp() {
         password_confirmation: values.password,
       }).unwrap();
 
-      console.log("🚀 ~ onSubmit ~ response:", response);
-      form.reset();
+      if (!response.success) {
+        await signIn("credentials", {
+          id: response.data.id,
+          email: response.data.email,
+          name: response.data.name,
+          token: response.data.token,
+          redirect: false,
+        });
+
+        toast({
+          title: "Error",
+          description: response.message,
+          variant: "destructive",
+          open: true,
+        });
+
+        router.push("/");
+      }
       toast({
         title: "Welcome",
-        description: "Sign in successfully",
+        description: "Sign up successfully",
         open: true,
       });
       router.push("/");
