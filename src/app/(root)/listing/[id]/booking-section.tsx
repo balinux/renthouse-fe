@@ -9,20 +9,25 @@ import { Loader2 } from "lucide-react";
 import moment from "moment";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useMemo } from "react";
 
 interface BookingSectionProps {
   id: number;
+  slug: string;
   price: number;
 }
 
-function BookingSection({ id, price }: BookingSectionProps) {
+function BookingSection({ id, slug, price }: BookingSectionProps) {
   const [startDate, setStartDate] = React.useState<Date>();
   const [endDate, setEndDate] = React.useState<Date>();
 
   // declare service transaction
   const [checkAvailability, { isLoading }] = useCheckAvailabilityMutation();
   const { toast } = useToast()
+
+  // router
+  const router = useRouter()
 
   // menggunakna use memo
   const booking = useMemo(() => {
@@ -56,7 +61,9 @@ function BookingSection({ id, price }: BookingSectionProps) {
       }
 
       const response = await checkAvailability(data).unwrap();
-      console.log(response);
+      if (response.success) {
+        router.push(`/listing/${slug}/checkout?start_date=${data.start_date}&end_date=${data.end_date}`)
+      }
     } catch (error: any) {
       console.log(error);
       if (error === 401) {
