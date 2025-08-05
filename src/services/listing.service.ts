@@ -8,7 +8,13 @@ export const listingApi = apiSlice.injectEndpoints({
         method: "GET",
       }),
     }),
+    getDetailListing: builder.query({
+      query: (slug: string) => ({
+        url: `/listings/${slug}`,
+        method: "GET",
+      }),
+    }),
   }),
 });
 
-export const { useGetListingQuery } = listingApi;
+export const { useGetListingQuery, useGetDetailListingQuery } = listingApi;
