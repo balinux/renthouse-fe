@@ -11,10 +11,13 @@ import Link from "next/link";
 import Listing from "./listing";
 import Review from "./review";
 import { useGetDetailListingQuery } from "@/services/listing.service";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import moment from "moment";
 import { moneyFormat } from "@/lib/utils";
+import { useTransactionMutation } from "@/services/transaction.service";
+import { useToast } from "@/components/atomics/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface CheckoutProps {
   params: {
@@ -25,6 +28,16 @@ function Checkout({ params }: CheckoutProps) {
 
   const { data: listing } = useGetDetailListingQuery(params.id);
 
+  // setup toast
+  const { toast } = useToast();
+
+  // setup route
+  const router = useRouter();
+
+  // mutation
+  const [transaction, { isLoading }] = useTransactionMutation();
+
+  // handle params
   const searchparams = useSearchParams();
 
   const startDateParam = searchparams.get("start_date");
@@ -35,27 +48,50 @@ function Checkout({ params }: CheckoutProps) {
   const [endDate, setEndDate] = useState<Date | undefined>(moment(endDateParam).toDate());
 
 
-   // menggunakna use memo
-    const booking = useMemo(() => {
-      let totalDays = 0;
-      let subTotal = 0;
-      let tax = 0;
-      let grandTotal = 0;
-  
-      if (startDate && endDate) {
-        totalDays = moment(endDate).diff(moment(startDate), "days");
-        subTotal = totalDays * listing?.data.price_per_day;
-        tax = subTotal * 0.1;
-        grandTotal = subTotal + tax;
+  // menggunakna use memo
+  const booking = useMemo(() => {
+    let totalDays = 0;
+    let subTotal = 0;
+    let tax = 0;
+    let grandTotal = 0;
+
+    if (startDate && endDate) {
+      totalDays = moment(endDate).diff(moment(startDate), "days");
+      subTotal = totalDays * listing?.data.price_per_day;
+      tax = subTotal * 0.1;
+      grandTotal = subTotal + tax;
+    }
+
+    return {
+      totalDays,
+      subTotal,
+      tax,
+      grandTotal,
+    };
+  }, [startDate, endDate, listing]);
+
+  // hadle playment
+  const handlePayment = async() => {
+    try {
+      const data = {
+        listing_id:listing.data.id,
+        start_date:moment(startDate).format("YYYY-MM-DD"),
+        end_date:moment(endDate).format("YYYY-MM-DD"),
       }
-  
-      return {
-        totalDays,
-        subTotal,
-        tax,
-        grandTotal,
-      };
-    }, [startDate, endDate, listing]);
+
+      const response = await transaction(data).unwrap();
+      if (response.success) {
+        router.push(`/booking-success/${response.data.id}/success`)
+      }
+    } catch (error: any) {
+      toast({
+        title: "Something went wrong",
+        description: error.data.message,
+        variant: "destructive",
+      })
+    }
+  };
+
 
   return (
     <main>
@@ -142,11 +178,10 @@ function Checkout({ params }: CheckoutProps) {
                   I agree with terms & conditions
                 </label>
               </div>
-              <Link href={`/booking-success/12321aa12/success`}>
-                <Button variant="default" size="default" className="mt-4">
-                  Make a Payment
-                </Button>
-              </Link>
+              <Button variant="default" size="default" className="mt-4" onClick={handlePayment} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Make a Payment
+              </Button>
             </div>
           </div>
         </div>
