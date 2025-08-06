@@ -9,7 +9,7 @@ export interface Transaction {
     price_per_day: string
     total_days: number
     fee: string
-    total_price: string
+    total_price: number
     status: string
     created_at: string
     updated_at: string

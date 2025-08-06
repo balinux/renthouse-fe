@@ -1,3 +1,4 @@
+"use client";
 import { Button } from '@/components/atomics/button'
 import Title from '@/components/atomics/title'
 import DataTransaction from '@/json/city-transaction.json'
@@ -12,8 +13,12 @@ import {
 import CardTransaction from '@/components/molecules/card/card-transaction'
 import { CityTransactionProps } from '@/interfaces/city-transaction'
 import CardEmpty from '@/components/molecules/card/card-empty'
+import { useGetTransactionsQuery } from '@/services/transaction.service'
+import { Transaction } from '@/interfaces/transaction';
 
 function MyTransactions() {
+  const { data: transactions } = useGetTransactionsQuery({})
+  console.log("transactions: ", transactions);
   return (
     <main>
       <div className='flex items-center justify-between'>
@@ -26,19 +31,22 @@ function MyTransactions() {
 
       <div className='mt-[30px] space-y-5'>
         {
-          DataTransaction.data.slice(0, 4).map((item: CityTransactionProps, index: number) => (
-            <CardTransaction
-              key={index}
-              image={item.image}
-              title={item.title}
-              location={item.location}
-              days={item.days}
-              price={item.price}
-              status={item.status}
-            />
-          ))
-        }
-        {/* <CardEmpty/> */}
+          transactions?.data?.total ? (
+            transactions?.data?.data.map((item: Transaction, index: number) => (
+              <CardTransaction
+                id={item.id}
+                key={index}
+                image={item.listing.attachments?.[0] || ""}
+                title={item.listing.title}
+                location={item.listing.address}
+                days={item.total_days}
+                price={item.total_price}
+                status={item.status}
+              />
+            ))
+          ) : (
+            <CardEmpty />
+          )}
       </div>
 
       <Pagination className='mt-[30px]'>
